@@ -15,16 +15,20 @@
     let wasmMalloc, wasmFree;
     fetchAndCompileWasmModules(['./program.wasm', './memory.wasm'])
     .then(([program, memory]) => {
+      const wasmMemory = new WebAssembly.Memory({ initial: 1024 });//add by hao
       return WebAssembly.instantiate(program, {
         env: {
-          malloc: len => wasmMalloc(len),
-          free: addr => wasmFree(addr)
+          __memory_base:0,//add by hao
+          memory:wasmMemory,
+          _malloc: len => wasmMalloc(len),
+          _free: addr => wasmFree(addr)
         }
       })
       .then(m => {
         return WebAssembly.instantiate(memory, {
           env: {
-            memory: m.exports.memory
+            //memory: m.exports.memory
+            memory:wasmMemory 
           }
         })
         .then(m => {
@@ -32,7 +36,8 @@
           wasmFree = m.exports.free;
         })
         .then(() => {
-          console.log(m.exports.createRecord(2, 1.1, 2.2));
+            console.log("haha:");
+            console.log(m.exports._createRecord(2, 1.1, 2.2));
         });
       });
     });
